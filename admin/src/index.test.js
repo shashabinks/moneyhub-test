@@ -9,39 +9,39 @@ app.use(bodyParser.json({ limit: "10mb" }));
 
 jest.mock("axios");
 
-app.get("/admin/generate-csv-report", async (req, res) => {
+// func to call endpoints/fetch data
+const fetchData = async (url) => {
   try {
-    const investmentsResponse = await axios.get("/investments");
-    const investments = investmentsResponse.data;
+    const response = await axios.get(url);
+    return response.data;
+  } catch (error) {
+    console.error(`Error fetching data from ${url}:`, error);
+    throw new Error(`Error fetching data from ${url}`);
+  }
+};
 
-    const companiesResponse = await axios.get("/companies");
-    const companies = companiesResponse.data;
+// func to generate csv data
+const generateCsvData = (investments, companies) => {
+  const companyMap = companies.reduce((map, company) => {
+    map[company.id] = company.name;
+    return map;
+  }, {});
 
-    const companyMap = companies.reduce((map, company) => {
-      map[company.id] = company.name;
-      return map;
-    }, {});
+  return investments.flatMap((investment) =>
+    investment.holdings.map((holding) => ({
+      User: investment.userId,
+      "First Name": investment.firstName,
+      "Last Name": investment.lastName,
+      Date: investment.date,
+      Holding: companyMap[holding.id] || "Unknown",
+      Value: investment.investmentTotal * holding.investmentPercentage,
+    }))
+  );
+};
 
-    const csvData = [];
-    investments.forEach((investment) => {
-      investment.holdings.forEach((holding) => {
-        const companyName = companyMap[holding.id];
-        csvData.push({
-          User: investment.userId,
-          "First Name": investment.firstName,
-          "Last Name": investment.lastName,
-          Date: investment.date,
-          Holding: companyName ? companyName : "Unknown",
-          Value: investment.investmentTotal * holding.investmentPercentage,
-        });
-      });
-    });
-
-    const json2csvParser = new Parser({
-      fields: ["User", "First Name", "Last Name", "Date", "Holding", "Value"],
-    });
-    const csv = json2csvParser.parse(csvData);
-
+// func to send csv report
+const sendCsvReport = async (csv) => {
+  try {
     await axios.post(
       "/investments/export",
       { csv },
@@ -49,11 +49,32 @@ app.get("/admin/generate-csv-report", async (req, res) => {
         headers: { "Content-Type": "application/json" },
       }
     );
+  } catch (error) {
+    console.error("Error sending CSV report:", error);
+    throw new Error("Error sending CSV report");
+  }
+};
+
+// endpoint to generate csv report
+app.get("/generate-csv-report", async (req, res) => {
+  try {
+    const [investments, companies] = await Promise.all([
+      fetchData("/investments"),
+      fetchData("/companies"),
+    ]);
+
+    const csvData = generateCsvData(investments, companies);
+    const json2csvParser = new Parser({
+      fields: ["User", "First Name", "Last Name", "Date", "Holding", "Value"],
+      quote: "",
+    });
+    const csv = json2csvParser.parse(csvData);
+
+    await sendCsvReport(csv);
 
     res.header("Content-Type", "text/csv");
     res.send(csv);
   } catch (error) {
-    console.error(error);
     res.status(500).send("Error generating CSV report");
   }
 });
@@ -81,15 +102,15 @@ describe("Admin Service", () => {
     });
     axios.post.mockResolvedValueOnce({});
 
-    const response = await supertest(app).get("/admin/generate-csv-report");
+    const response = await supertest(app).get("/generate-csv-report");
 
     expect(response.status).toBe(200);
     expect(response.headers["content-type"]).toBe("text/csv; charset=utf-8");
     expect(response.text).toContain(
-      "User,First Name,Last Name,Date,Holding,Value"
+      '"User","First Name","Last Name","Date","Holding","Value'
     );
     expect(response.text).toContain(
-      "1,Billy,Bob,2020-01-01,The Small Investment Company,1400"
+      '1","Billy","Bob","2020-01-01","The Small Investment Company",1400'
     );
   });
 });
