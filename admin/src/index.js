@@ -1,55 +1,13 @@
 const express = require("express");
 const config = require("config");
-const axios = require("axios");
+
 const { Parser } = require("json2csv");
 
+const sendCsvReport = require("./modules/send-csv-report");
+const fetchData = require("./modules/fetch-data");
+const generateCsvData = require("./modules/generate-csv-data");
+
 const app = express();
-
-// helper to fetch data from a service
-const fetchData = async (url) => {
-  try {
-    const response = await axios.get(url);
-    return response.data;
-  } catch (error) {
-    console.error(`Error fetching data from ${url}:`, error);
-    throw new Error(`Error fetching data from ${url}`);
-  }
-};
-
-// func to generate csv data
-const generateCsvData = (investments, companies) => {
-  const companyMap = companies.reduce((map, company) => {
-    map[company.id] = company.name;
-    return map;
-  }, {});
-
-  return investments.flatMap((investment) =>
-    investment.holdings.map((holding) => ({
-      User: investment.userId,
-      "First Name": investment.firstName,
-      "Last Name": investment.lastName,
-      Date: investment.date,
-      Holding: companyMap[holding.id] || "Unknown",
-      Value: investment.investmentTotal * holding.investmentPercentage,
-    }))
-  );
-};
-
-// func to send csv report
-const sendCsvReport = async (csv) => {
-  try {
-    await axios.post(
-      `${config.investmentsServiceUrl}/investments/export`,
-      { csv },
-      {
-        headers: { "Content-Type": "application/json" },
-      }
-    );
-  } catch (error) {
-    console.error("Error sending CSV report:", error);
-    throw new Error("Error sending CSV report");
-  }
-};
 
 app.get("/investments/:id", async (req, res) => {
   const { id } = req.params;
