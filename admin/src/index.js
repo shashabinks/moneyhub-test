@@ -1,11 +1,9 @@
 const express = require("express");
-const bodyParser = require("body-parser");
 const config = require("config");
 const axios = require("axios");
 const { Parser } = require("json2csv");
 
 const app = express();
-app.use(bodyParser.json({ limit: "10mb" }));
 
 // helper to fetch data from a service
 const fetchData = async (url) => {
@@ -66,10 +64,13 @@ app.get("/investments/:id", async (req, res) => {
 });
 
 // endpoint to generate and send csv
-app.get("/admin/generate-csv-report", async (req, res) => {
+app.get("/investments/generate-csv-report/:id?", async (req, res) => {
   try {
+    const { id } = req.params;
     const [investments, companies] = await Promise.all([
-      fetchData(`${config.investmentsServiceUrl}/investments`),
+      fetchData(
+        `${config.investmentsServiceUrl}/investments${id ? `/${id}` : ""}`
+      ),
       fetchData(`${config.financialCompaniesServiceUrl}/companies`),
     ]);
 
@@ -96,3 +97,5 @@ app.listen(config.port, (err) => {
   }
   console.log(`Server running on port ${config.port}`);
 });
+
+module.exports = app;
