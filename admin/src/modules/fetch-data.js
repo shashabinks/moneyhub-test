@@ -1,13 +1,21 @@
 const axios = require("axios");
+const config = require("config");
 
-const fetchData = async (url) => {
-  try {
-    const response = await axios.get(url);
-    return response.data;
-  } catch (error) {
-    console.error(`Error fetching data from ${url}:`, error);
-    throw new Error(`Error fetching data from ${url}`);
-  }
+async function fetchInvestments() {
+  const response = await axios.get(
+    `${config.investmentsServiceUrl}/investments`
+  );
+  return response.data;
+}
+
+async function fetchCompanies() {
+  const response = await axios.get(
+    `${config.financialCompaniesServiceUrl}/companies`
+  );
+  return response.data;
+}
+
+module.exports = {
+  fetchInvestments,
+  fetchCompanies,
 };
-
-module.exports = fetchData;
