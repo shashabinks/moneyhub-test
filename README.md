@@ -14,29 +14,9 @@
 - **Method**: `GET`
 - **Description**: Fetches an investment record by its ID.
 
-## Installation
-
-1. Clone the repository:
-
-   ```sh
-   git clone <repository-url>
-   ```
-
-2. Navigate to the project directory:
-
-   ```sh
-   cd admin
-   ```
-
-3. Install dependencies:
-
-   ```sh
-   npm i
-   ```
-
 ## Running the Project
 
-1. Start the admin service:
+1. Start the project by running:
 
    ```sh
    npm start
@@ -52,7 +32,7 @@
 
 ## Running Tests
 
-To run the tests, use the following command:
+To run the tests, use the following command (in the admin directory):
 
 ```sh
 npm test
