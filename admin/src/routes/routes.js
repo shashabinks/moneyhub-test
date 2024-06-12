@@ -4,7 +4,11 @@ const config = require("config");
 const request = require("request");
 const axios = require("axios");
 
-const { fetchInvestments, fetchCompanies } = require("../modules/fetch-data");
+const {
+  fetchInvestments,
+  fetchInvestmentsById,
+} = require("../modules/fetch-data");
+
 const generateCsv = require("../modules/generate-csv-data");
 const router = express.Router();
 
@@ -13,10 +17,15 @@ router.get("/investments/generate-csv/:id?", async (req, res) => {
   try {
     const { id } = req.params;
 
-    const investments = await fetchInvestments();
-    const companies = await fetchCompanies();
+    let investments;
 
-    const csv = generateCsv(investments, companies, id);
+    if (id) {
+      investments = await fetchInvestmentsById(id);
+    } else {
+      investments = await fetchInvestments();
+    }
+
+    const csv = await generateCsv(investments);
 
     await axios.post(
       `${config.investmentsServiceUrl}/investments/export`,

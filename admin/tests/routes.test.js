@@ -7,11 +7,13 @@ const routes = require("../src/routes/routes");
 jest.mock("axios");
 jest.mock("../src/modules/fetch-data", () => ({
   fetchInvestments: jest.fn(),
+  fetchInvestmentsById: jest.fn(),
   fetchCompanies: jest.fn(),
 }));
 
 const {
   fetchInvestments,
+  fetchInvestmentsById,
   fetchCompanies,
 } = require("../src/modules/fetch-data");
 
@@ -19,9 +21,20 @@ const app = express();
 app.use(bodyParser.json());
 app.use("/", routes);
 
+const companies = [
+  { id: "1", name: "Big Investment Co" },
+  { id: "2", name: "Small Investment Co" },
+];
+
 describe("GET /investments/generate-csv", () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
+  beforeAll(() => {
+    fetchCompanies.mockImplementation((id) => {
+      const company = companies.find((company) => company.id === id);
+      if (company) {
+        return Promise.resolve(company);
+      }
+      return Promise.reject(new Error("Company not found"));
+    });
   });
 
   it("should generate and send CSV for all investments", async () => {
@@ -49,11 +62,6 @@ describe("GET /investments/generate-csv", () => {
       },
     ]);
 
-    fetchCompanies.mockResolvedValue([
-      { id: "1", name: "Big Investment Co" },
-      { id: "2", name: "Small Investment Co" },
-    ]);
-
     const expectedCsv = `User|First Name|Last Name|Date|Holding|Value|
 "1"|"Alice"|"Doe"|"2021-01-01"|"Big Investment Co"|500
 "1"|"Alice"|"Doe"|"2021-01-01"|"Small Investment Co"|500
@@ -75,8 +83,8 @@ describe("GET /investments/generate-csv", () => {
     );
   });
 
-  it("should generate and send CSV for a specific user ID", async () => {
-    fetchInvestments.mockResolvedValue([
+  it("should generate and send CSV for a specific investment ID", async () => {
+    fetchInvestmentsById.mockResolvedValue([
       {
         id: "1",
         userId: "1",
@@ -89,20 +97,6 @@ describe("GET /investments/generate-csv", () => {
           { id: "2", investmentPercentage: 0.5 },
         ],
       },
-      {
-        id: "2",
-        userId: "2",
-        firstName: "Bob",
-        lastName: "Smith",
-        investmentTotal: 2000,
-        date: "2021-01-01",
-        holdings: [{ id: "2", investmentPercentage: 1 }],
-      },
-    ]);
-
-    fetchCompanies.mockResolvedValue([
-      { id: "1", name: "Big Investment Co" },
-      { id: "2", name: "Small Investment Co" },
     ]);
 
     const expectedCsv = `User|First Name|Last Name|Date|Holding|Value|

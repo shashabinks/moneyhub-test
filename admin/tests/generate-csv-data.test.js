@@ -1,4 +1,19 @@
-const generateCsvData = require("../src/modules/generate-csv-data");
+const generateCsv = require("../src/modules/generate-csv-data");
+const express = require("express");
+const bodyParser = require("body-parser");
+const request = require("supertest");
+const axios = require("axios");
+const routes = require("../src/routes/routes");
+const {
+  fetchInvestments,
+  fetchCompanies,
+} = require("../src/modules/fetch-data");
+
+jest.mock("axios");
+jest.mock("../src/modules/fetch-data", () => ({
+  fetchInvestments: jest.fn(),
+  fetchCompanies: jest.fn(),
+}));
 
 const companies = [
   { id: "1", name: "Big Investment Co" },
@@ -30,8 +45,19 @@ const investments = [
 ];
 
 describe("generateCsv", () => {
-  it("should generate CSV for all investments", () => {
-    const csv = generateCsvData(investments, companies);
+  beforeAll(() => {
+    fetchCompanies.mockImplementation((id) => {
+      const company = companies.find((company) => company.id === id);
+      if (company) {
+        return Promise.resolve(company);
+      }
+      return Promise.reject(new Error("Company not found"));
+    });
+  });
+
+  it("should generate CSV for all investments", async () => {
+    const csv = await generateCsv(investments);
+
     const expectedCsv = `User|First Name|Last Name|Date|Holding|Value|
 "1"|"Alice"|"Doe"|"2021-01-01"|"Big Investment Co"|500
 "1"|"Alice"|"Doe"|"2021-01-01"|"Small Investment Co"|500
@@ -40,8 +66,11 @@ describe("generateCsv", () => {
     expect(csv.trim()).toBe(expectedCsv.trim());
   });
 
-  it("should generate CSV for a specific user ID", () => {
-    const csv = generateCsvData(investments, companies, "1");
+  it("should generate CSV for a specific user ID", async () => {
+    const specificInvestments = investments.filter(
+      (investment) => investment.userId === "1"
+    );
+    const csv = await generateCsv(specificInvestments);
     const expectedCsv = `User|First Name|Last Name|Date|Holding|Value|
 "1"|"Alice"|"Doe"|"2021-01-01"|"Big Investment Co"|500
 "1"|"Alice"|"Doe"|"2021-01-01"|"Small Investment Co"|500
@@ -49,8 +78,11 @@ describe("generateCsv", () => {
     expect(csv.trim()).toBe(expectedCsv.trim());
   });
 
-  it("should return empty CSV for non-existent user ID", () => {
-    const csv = generateCsvData(investments, companies, "3");
+  it("should return empty CSV for non-existent user ID", async () => {
+    const nonExistentInvestments = investments.filter(
+      (investment) => investment.userId === "3"
+    );
+    const csv = await generateCsv(nonExistentInvestments);
     const expectedCsv = `User|First Name|Last Name|Date|Holding|Value|
 `;
     expect(csv.trim()).toBe(expectedCsv.trim());

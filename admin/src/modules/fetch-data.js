@@ -8,14 +8,23 @@ async function fetchInvestments() {
   return response.data;
 }
 
-async function fetchCompanies() {
+async function fetchInvestmentsById(id) {
   const response = await axios.get(
-    `${config.financialCompaniesServiceUrl}/companies`
+    `${config.investmentsServiceUrl}/investments/${id}`
   );
+  return response.data;
+}
+
+async function fetchCompanies(id) {
+  const response = await axios.get(
+    `${config.financialCompaniesServiceUrl}/companies/${id}`
+  );
+
   return response.data;
 }
 
 module.exports = {
   fetchInvestments,
+  fetchInvestmentsById,
   fetchCompanies,
 };

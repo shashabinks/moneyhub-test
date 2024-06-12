@@ -1,41 +1,47 @@
 const { Parser } = require("json2csv");
+const axios = require("axios");
+const config = require("config");
+const { fetchCompanies } = require("../modules/fetch-data");
 
-function generateCsv(investments, companies, userId = null) {
-  const companyMap = {};
-  companies.forEach((company) => {
-    companyMap[company.id] = company.name;
-  });
+async function generateCsv(investments) {
+  try {
+    const csvData = [];
 
-  const filteredInvestments = userId
-    ? investments.filter((investment) => investment.userId === userId)
-    : investments;
+    for (const investment of investments) {
+      for (const holding of investment.holdings) {
+        const companyResponse = await fetchCompanies(holding.id);
+        const companyName = companyResponse.name;
 
-  const csvData = filteredInvestments.flatMap((investment) =>
-    investment.holdings.map((holding) => ({
-      User: investment.userId,
-      "First Name": investment.firstName,
-      "Last Name": investment.lastName,
-      Date: investment.date,
-      Holding: companyMap[holding.id],
-      Value: investment.investmentTotal * holding.investmentPercentage,
-    }))
-  );
+        csvData.push({
+          User: investment.userId,
+          "First Name": investment.firstName,
+          "Last Name": investment.lastName,
+          Date: investment.date,
+          Holding: companyName,
+          Value: investment.investmentTotal * holding.investmentPercentage,
+        });
+      }
+    }
 
-  const fields = [
-    "User",
-    "First Name",
-    "Last Name",
-    "Date",
-    "Holding",
-    "Value",
-  ];
-  const opts = { fields, header: false, delimiter: "|" };
-  const json2csvParser = new Parser(opts);
-  const csv =
-    "User|First Name|Last Name|Date|Holding|Value|\n" +
-    json2csvParser.parse(csvData);
+    const fields = [
+      "User",
+      "First Name",
+      "Last Name",
+      "Date",
+      "Holding",
+      "Value",
+    ];
+    const opts = { fields, header: false, delimiter: "|" };
+    const json2csvParser = new Parser(opts);
+    const csv =
+      "User|First Name|Last Name|Date|Holding|Value|\n" +
+      json2csvParser.parse(csvData);
 
-  return csv;
+    return csv;
+  } catch (error) {
+    console.error("Error generating CSV:", error);
+    throw error;
+  }
 }
 
 module.exports = generateCsv;

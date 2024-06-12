@@ -54,7 +54,7 @@ npm test
 
 - Enhance error handling with more specific error messages and codes.
 - Increase test coverage for edge cases and different scenarios.
-- Make use on Ramda
+- Make use of Ramda
 - Use TypeScript over standard JavaScript to make it more Type-strict and consistent.
 - Integrate Continuous Integration and Continuous Deployment pipelines for automated testing and deployment.
 - Further refactor the code to improve readability and maintainability.
