@@ -1,13 +1,6 @@
 const generateCsv = require("../src/modules/generate-csv-data");
-const express = require("express");
-const bodyParser = require("body-parser");
-const request = require("supertest");
-const axios = require("axios");
-const routes = require("../src/routes/routes");
-const {
-  fetchInvestments,
-  fetchCompanies,
-} = require("../src/modules/fetch-data");
+
+const { fetchCompanies } = require("../src/modules/fetch-data");
 
 jest.mock("axios");
 jest.mock("../src/modules/fetch-data", () => ({

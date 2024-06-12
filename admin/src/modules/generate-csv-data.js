@@ -1,6 +1,4 @@
 const { Parser } = require("json2csv");
-const axios = require("axios");
-const config = require("config");
 const { fetchCompanies } = require("../modules/fetch-data");
 
 async function generateCsv(investments) {
